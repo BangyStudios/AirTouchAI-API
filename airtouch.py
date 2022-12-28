@@ -1,8 +1,8 @@
 import socket
 from typing import List
-import helper
-import packetmap
-import communicate
+from . import helper
+from . import packetmap
+from . import communicate
 from enum import Enum
 #API
 
