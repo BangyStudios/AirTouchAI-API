@@ -1,8 +1,8 @@
 import socket
 from typing import List
-from airtouch4pyapi import helper
-from airtouch4pyapi import packetmap
-from airtouch4pyapi import communicate
+from . import helper
+from . import packetmap
+from . import communicate
 from enum import Enum
 # from hexdump import hexdump
 #API
