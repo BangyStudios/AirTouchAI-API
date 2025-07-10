@@ -1,3 +1,4 @@
+import asyncio
 import socket
 from typing import List
 from . import helper
@@ -78,47 +79,55 @@ class AirTouch:
         self.acs = dict();
         self.groups = dict();
         self.Messages:List[AirTouchError] = [];
+        
+        self.UpdateInfo_lock = asyncio.Lock()
+        self.UpdateInfo_task = None
     
     async def UpdateInfo(self):
-        if(self.atPort != None and self.atVersion == None):
-            self.Status = AirTouchStatus.ERROR
-            errorMessage = AirTouchError()
-            errorMessage.Message = "If you specify a port, you must specify a version"
-            self.Messages.append(errorMessage)
-            print(self.Status)
-            for msg in self.Messages:
-                print(msg.Message);
-            return;
+        async with self.UpdateInfo_lock:
+            self._update_task = asyncio.current_task()
+        
+            if(self.atPort != None and self.atVersion == None):
+                self.Status = AirTouchStatus.ERROR
+                errorMessage = AirTouchError()
+                errorMessage.Message = "If you specify a port, you must specify a version"
+                self.Messages.append(errorMessage)
+                print(self.Status)
+                for msg in self.Messages:
+                    print(msg.Message);
+                return;
 
-        if(self.atVersion == None):
-            await self.findVersion()
+            if(self.atVersion == None):
+                await self.findVersion()
 
-        if(self.atVersion == None):
-            print(self.Status)
-            for msg in self.Messages:
-                print(msg.Message);
-            return;
-        #get the group infos
-        await self.UpdateGroupInfo()
-        
-        #if the first call means we still have an error status, not worth doing the subsequent ones
-        if(self.Status != AirTouchStatus.OK):
-            print(self.Status)
-            for msg in self.Messages:
-                print(msg.Message);
-            return;
-        
-        #get the group nicknames 
-        await self.UpdateGroupNames()
-        
-        #get ac infos
-        await self.UpdateAcInfo()
-        
-        #get ac abilities
-        await self.UpdateAcAbility()
+            if(self.atVersion == None):
+                print(self.Status)
+                for msg in self.Messages:
+                    print(msg.Message);
+                return;
+            #get the group infos
+            await self.UpdateGroupInfo()
+            
+            #if the first call means we still have an error status, not worth doing the subsequent ones
+            if(self.Status != AirTouchStatus.OK):
+                print(self.Status)
+                for msg in self.Messages:
+                    print(msg.Message);
+                return;
+            
+            #get the group nicknames 
+            await self.UpdateGroupNames()
+            
+            #get ac infos
+            await self.UpdateAcInfo()
+            
+            #get ac abilities
+            await self.UpdateAcAbility()
 
-        #sort out which AC belongs to which zone/group
-        self.AssignAcsToGroups()
+            #sort out which AC belongs to which zone/group
+            self.AssignAcsToGroups()
+            
+            self.UpdateInfo_task = None
 
     async def findVersion(self):
         if(await self.isOpen(self.IpAddress, 9004)):
