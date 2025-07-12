@@ -263,7 +263,23 @@ class AirTouch:
         controlMessage.SetMessageValue("Power", 2)
         controlMessage.SetMessageValue("AcNumber", acNumber)
         await self.SendMessageToAirtouch(controlMessage)
-    
+
+    async def SetTemperatureForAc(self, acNumber, temperature):
+        controlMessage = packetmap.MessageFactory.CreateEmptyMessageOfType("AcControl", self.atVersion)
+        # these are required to leave these settings unchanged
+        controlMessage.SetMessageValue("AcMode", 0x0f)
+        controlMessage.SetMessageValue("AcFanSpeed", 0x0f)
+
+        if self.atVersion == AirTouchVersion.AIRTOUCH4:
+            controlMessage.SetMessageValue("TargetSetpoint", temperature)
+        elif self.atVersion == AirTouchVersion.AIRTOUCH5:
+            controlMessage.SetMessageValue("SetpointControlType", 0x00)
+            controlMessage.SetMessageValue("TargetSetpoint", temperature * 10 - 100)
+
+        controlMessage.SetMessageValue("AcNumber", acNumber)
+
+        await self.SendMessageToAirtouch(controlMessage)
+
     # END Main control functions
 
     #use a fanspeed reported from GetSupportedFanSpeedsForAc
